@@ -1,4 +1,4 @@
-# Copyright (C) 2016 Michael D. Nunez
+# Copyright (C) 2017 Michael D. Nunez
 #
 # License: BSD (3-clause)
 
@@ -7,6 +7,7 @@
 # Date            Programmers                         Descriptions of Change
 # ====         ================                       ======================
 # 03/30/16      Michael Nunez                            Original code
+# 05/31/17      Michael Nunez                      Addition of epochsubset
 
 import numpy as np
 
@@ -28,3 +29,39 @@ def baseline(data, wind=range(0, 50)):
     recentered = data - np.tile(baselines, (data.shape[0], 1, 1))
 
     return recentered
+
+
+def epochsubset(data, newindex, lockindex=None):
+    """Reepochs each epoch of EEG data by timelocking each epoch
+    "i" to "newindex[i]" with maximum window size available
+
+    Inputs:  
+    data - sample*channel*trial EEG data
+    newindex - Vector of length "trial"
+
+    Optional inputs:
+    lockindex - Sample in which newdata is timelocked
+                Default: nanmin(newindex)
+
+    Outputs:  
+    newdata - Re-timelocked EEG data          
+    lockindex - Sample in which newdata is timelocked
+    badtrials - Index of trials where newindex contained nans
+    """
+
+    if lockindex is None:
+        lockindex = np.round(np.nanmin(newindex))
+
+    windsize = (np.shape(data)[0] - np.nanmax(newindex)) + lockindex
+
+    newdata = np.zeros((windsize, np.shape(data)[1], np.shape(data)[2]))
+
+    for t in range(0, np.size(newindex)):
+        if not np.nan(newindex[t]):
+            begin_index = newindex[t] - lockindex
+            end_index = windsize + begin_index - 1
+            newdata[:, :, t] = data[begin_index: end_index, :, t]
+
+    badtrials = np.where(np.isnan(newindex))
+
+    return newdata, lockindex, badtrials
