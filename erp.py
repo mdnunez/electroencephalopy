@@ -50,16 +50,16 @@ def epochsubset(data, newindex, lockindex=None):
     """
 
     if lockindex is None:
-        lockindex = np.round(np.nanmin(newindex))
+        lockindex = int(np.nanmin(newindex))
 
-    windsize = (np.shape(data)[0] - np.nanmax(newindex)) + lockindex
+    windsize = (np.shape(data)[0] - int(np.nanmax(newindex))) + int(lockindex)
 
-    newdata = np.zeros((windsize, np.shape(data)[1], np.shape(data)[2]))
+    newdata = np.zeros((int(windsize), int(np.shape(data)[1]), int(np.shape(data)[2])))
 
     for t in range(0, np.size(newindex)):
-        if not np.nan(newindex[t]):
-            begin_index = newindex[t] - lockindex
-            end_index = windsize + begin_index - 1
+        if np.isfinite(newindex[t]):
+            begin_index = int(newindex[t]) - lockindex
+            end_index = windsize + begin_index
             newdata[:, :, t] = data[begin_index: end_index, :, t]
 
     badtrials = np.where(np.isnan(newindex))
