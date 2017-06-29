@@ -8,6 +8,7 @@
 # ====         ================                       ======================
 # 03/30/16      Michael Nunez                            Original code
 # 05/31/17      Michael Nunez                      Addition of epochsubset
+# 06/29/17      Michael Nunez                      Addition of finddeflection
 
 import numpy as np
 
@@ -54,7 +55,8 @@ def epochsubset(data, newindex, lockindex=None):
 
     windsize = (np.shape(data)[0] - int(np.nanmax(newindex))) + int(lockindex)
 
-    newdata = np.zeros((int(windsize), int(np.shape(data)[1]), int(np.shape(data)[2])))
+    newdata = np.zeros(
+        (int(windsize), int(np.shape(data)[1]), int(np.shape(data)[2])))
 
     for t in range(0, np.size(newindex)):
         if np.isfinite(newindex[t]):
@@ -65,3 +67,31 @@ def epochsubset(data, newindex, lockindex=None):
     badtrials = np.where(np.isnan(newindex))
 
     return newdata, lockindex, badtrials
+
+
+def finddeflection(erp, cutoff, baseline, erpwindow):
+    '''
+    Converted from Ramesh Srinivasan's MATLAB function
+    to find onset times of certain ERPs
+    '''
+    maxtime = np.shape(erp)[0] - np.size(baseline)
+    onset = np.zeros((np.shape(erp)[1]))
+    for j in np.arange(0, np.shape(erp)[1]):
+        test = erp[:, j] < cutoff[j]
+        testtime = np.where(test)[0]
+        testval = np.zeros((np.size(test)))
+        if np.size(testtime) > 0:
+            for k in np.arange(0, np.size(testtime)):
+                if testtime[k] < maxtime:
+                    testval[testtime[k]] = np.sum(
+                        test[testtime[k] + baseline])
+
+            # Find where the deflection remains for the lenght of the baseline
+            testbaseline = np.where(testval == np.size(baseline))[0]
+            if np.size(testbaseline) > 0:
+                onset[j] = erpwindow[testbaseline[0]]
+            else:
+                onset[j] = np.nan
+        else:
+            onset[j] = np.nan
+    return onset
